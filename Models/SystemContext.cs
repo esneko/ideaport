@@ -22,12 +22,17 @@ namespace ideaport.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Client>();
+            modelBuilder.Entity<Client>()
+                .HasMany(e => e.Tasks);
 
             modelBuilder.Entity<Task>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
             });
+
+            modelBuilder.Entity<Task>()
+                .HasOne(e => e.Client)
+                .WithMany(e => e.Tasks);
 
             modelBuilder.Entity<User>(entity =>
             {

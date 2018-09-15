@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ideaport.Models;
 
 namespace ideaport.Controllers
@@ -14,15 +16,22 @@ namespace ideaport.Controllers
     {
         private readonly SystemContext _system;
 
-        public TasksController(SystemContext system)
+        private readonly IMapper _mapper;
+
+        public TasksController(SystemContext system, IMapper mapper)
         {
             _system = system;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public ActionResult<List<Task>> Get()
         {
-            List<Task> tasks = _system.Task.ToList();
+            List<Task> tasks = _system.Task
+                .Include(e => e.Client)
+                .Include(e => e.UserTasks)
+                .ThenInclude(e => e.User)
+                .ToList();
 
             return tasks;
         }
@@ -30,15 +39,23 @@ namespace ideaport.Controllers
         [HttpGet("{id}")]
         public ActionResult<Task> Get(string id)
         {
-            Task task = _system.Task.FirstOrDefault(u => u.Id == new Guid(id));
+            Task task = _system.Task.Find(new Guid(id));
 
             return task;
         }
 
         [HttpPost]
-        public void Post(Task task)
+        public void Post(TaskViewModel task)
         {
-            _system.Task.Add(task);
+            Task newTask = _mapper.Map<TaskViewModel, Task>(task);
+            _system.Task.Add(newTask);
+
+            _system.UserTasks.AddRange(task.Employees.Select(user => new UserTask()
+            {
+                UserId = new Guid(user.Id),
+                TaskId = newTask.Id
+            }));
+
             _system.SaveChanges();
         }
 
