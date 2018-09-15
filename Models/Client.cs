@@ -9,5 +9,6 @@ namespace ideaport.Models
         public Guid Id { get; set; }
         [Required]
         public string Name { get; set; }
+        public ICollection<Task> Tasks { get; set; }
     }
 }
